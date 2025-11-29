@@ -1,22 +1,29 @@
 "use client";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-
+import FormField from "@/components/common/FormField";
 import { Button } from "@/components/ui/button";
-
+import { Form } from "@/components/ui/form";
+import { auth } from "@/firebase/client";
+import { signIn, signUp } from "@/lib/actions/auth.action";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { ClipLoader } from "react-spinners";
 import { toast } from "sonner";
-import FormField from "@/components/common/FormField";
-import { Form } from "@/components/ui/form";
+import { z } from "zod";
 
 const authFormSchema = (type: FormType) => {
   return z.object({
-    username:
+    name:
       type === "sign-up"
         ? z.string().min(2, {
-            message: "Username must be at least 2 characters.",
+            message: "Name must be at least 2 characters.",
           })
         : z.string().optional(),
     email: z.email(),
@@ -25,30 +32,78 @@ const authFormSchema = (type: FormType) => {
 };
 
 const AuthForm = ({ type }: { type: FormType }) => {
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
   const isSignIN = type === "sign-in";
   const formSchema = authFormSchema(type);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: "",
+      name: "",
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setLoading(true);
     try {
       if (type === "sign-in") {
-        console.log("SIGN IN", values);
+        const { email, password } = values;
+
+        const userCredential = await signInWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+
+        const idToken = await userCredential.user.getIdToken();
+        if (!idToken) {
+          toast.error("Sign in Failed. Please try again.");
+          setLoading(false);
+          return;
+        }
+
+        await signIn({
+          email,
+          idToken,
+        });
+
+        toast.success("Signed in successfully.");
+        router.push("/");
       } else {
-        console.log("SIGN UP", values);
+        const { name, email, password } = values;
+
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+
+        const result = await signUp({
+          uid: userCredential.user.uid,
+          name: name!,
+          email,
+          password,
+        });
+
+        if (!result.success) {
+          toast.error(result.message);
+          setLoading(false);
+          return;
+        }
+
+        toast.success("Account created successfully. Please sign in.");
+        router.push("/sign-in");
       }
     } catch (error) {
       console.log(error);
       toast.error(`Something went wrong, ${error}`);
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
-    <div className="bg-background border border-accent shadow p-5 lg:p-8 rounded-md lg:rounded-xl w-3/4 md:w-2/5">
+    <div className="bg-background border shadow p-5 lg:p-8 rounded-md lg:rounded-xl w-3/4 md:w-2/5">
       <div className="flex flex-col items-center gap-5">
         <div className="flex flex-row justify-center items-center gap-3 ">
           <Image src={"/logo.svg"} height={35} width={38} alt="logo" />
@@ -65,7 +120,7 @@ const AuthForm = ({ type }: { type: FormType }) => {
             {!isSignIN && (
               <FormField
                 control={form.control}
-                name="username"
+                name="name"
                 label="Full Name"
                 placeholder="Enter your full name"
               />
@@ -85,9 +140,14 @@ const AuthForm = ({ type }: { type: FormType }) => {
               type="password"
               enableVisibilityToggle
             />
-            <p>Password</p>
-            <Button type="submit">
-              {isSignIN ? "Sign in" : "Create New Account"}
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? (
+                <ClipLoader size={22} color="white" />
+              ) : isSignIN ? (
+                "Sign in"
+              ) : (
+                "Create New Account"
+              )}
             </Button>
           </form>
         </Form>

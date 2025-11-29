@@ -1,5 +1,3 @@
-import React, { useState } from "react";
-import { Control, Controller, FieldValues, Path } from "react-hook-form";
 import {
   FormControl,
   FormItem,
@@ -8,6 +6,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Eye, EyeOff } from "lucide-react";
+import React, { useState } from "react";
+import { Control, Controller, FieldValues, Path } from "react-hook-form";
 
 interface FormFieldProps<T extends FieldValues> {
   control: Control<T>;
