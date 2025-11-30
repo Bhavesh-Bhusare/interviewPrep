@@ -1,6 +1,24 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @custom-variant dark (&:is(.dark *));
+@theme {
+    --color-success-100: #49de50;
+    --color-success-200: #42c748;
+    --color-destructive-100: #f75353;
+    --color-destructive-200: #c44141;
+    --color-primary-100: #dddfff;
+    --color-primary-200: #cac5fe;
+    --color-light-100: #d6e0ff;
+    --color-light-400: #6870a6;
+    --color-light-600: #4f557d;
+    --color-light-800: #24273a;
+    --color-dark-100: #020408;
+    --color-dark-200: #27282f;
+    --color-dark-300: #242633;
+    --font-mona-sans: "Mona Sans", sans-serif;
+    --bg-pattern: url("/pattern.png");
+}
+
 @theme inline {
     --radius-sm: calc(var(--radius) - 4px);
     --radius-md: calc(var(--radius) - 2px);
@@ -115,4 +133,14 @@
     body {
         @apply bg-background text-foreground;
     }
+    h2 {
+        @apply text-3xl font-semibold;
+    }
+    h3 {
+        @apply text-2xl font-semibold;
+    }
+}
+
+@utility animate-fadeIn {
+    animation: fadeIn 0.3s ease-in-out;
 }
